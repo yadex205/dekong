@@ -1,4 +1,4 @@
-class BinaryReader {
+export class BinaryReader {
   private _buffer: ArrayBuffer;
   private _dataView: DataView;
   private _isLittleEndian: boolean;
@@ -8,6 +8,10 @@ class BinaryReader {
     this._buffer = buffer;
     this._dataView = new DataView(buffer);
     this._isLittleEndian = isLittleEndian;
+  }
+
+  public get size() {
+    return this._buffer.byteLength;
   }
 
   public seek = (position: number) => {

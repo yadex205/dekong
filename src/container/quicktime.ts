@@ -33,16 +33,16 @@ class QuickTimeFileParser {
   public parse = async () => {
     for await (const atom of this.scanAtoms(0, this._file.size)) {
       if (atom.type === "ftyp") {
-        this.onFileTypeCompatibilityAtom(await atom.readBodyChunk());
+        this.parseFileTypeCompatibilityAtom(await atom.readBodyChunk());
       } else if (atom.type === "mdat") {
-        this.onMovieDataAtom(atom.bodyStartPosition, atom.bodyEndPosition);
+        this.parseMovieDataAtom(atom.bodyStartPosition, atom.bodyEndPosition);
       } else if (atom.type === "moov") {
       } else if (atom.type === "wide") {
       }
     }
   }
 
-  private onFileTypeCompatibilityAtom = (atomBody: BinaryReader) => {
+  private parseFileTypeCompatibilityAtom = (atomBody: BinaryReader) => {
     const majorBrand = atomBody.readString(4);
     const minorVersion = atomBody.readUInt32();
     const compatibleBrands: string[] = [];
@@ -52,7 +52,7 @@ class QuickTimeFileParser {
     this._metadata.fileTypeCompatibility = { majorBrand, minorVersion, compatibleBrands }
   }
 
-  private onMovieDataAtom = (atomBodyStartPosition: number, atomBodyEndPosition: number) => {
+  private parseMovieDataAtom = (atomBodyStartPosition: number, atomBodyEndPosition: number) => {
     const startPosition = atomBodyStartPosition;
     const endPosition = atomBodyEndPosition;
     this._metadata.movieData = { startPosition, endPosition };

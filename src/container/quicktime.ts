@@ -62,25 +62,19 @@ class QuickTimeFileParser {
     let position = startPosition;
 
     while (position < endPosition) {
-      const atomHeader = new BinaryReader(await this.readChunk(position, Math.min(position + 16, this._file.size)));
-      const shortAtomSize = atomHeader.readUInt32();
-      const atomType = atomHeader.readString(4);
-      const extendedAtomSize = shortAtomSize === 0 ? atomHeader.readUInt64() : 0;
+      const header = new BinaryReader(await this.readChunk(position, Math.min(position + 16, this._file.size)));
+      const shortSize = header.readUInt32();
+      const type = header.readString(4);
+      const extendedSize = shortSize === 0 ? header.readUInt64() : 0;
 
-      const atomSize = shortAtomSize > 0 ? shortAtomSize : extendedAtomSize;
-      const atomBodyStartPosition = shortAtomSize > 0 ? position + 8 : position + 16;
-      const atomBodyEndPosition = position + atomSize;
-      const readAtomBodyChunk = async () => new BinaryReader(await this.readChunk(atomBodyStartPosition, atomBodyEndPosition));
+      const size = shortSize > 0 ? shortSize : extendedSize;
+      const bodyStartPosition = shortSize > 0 ? position + 8 : position + 16;
+      const bodyEndPosition = position + size;
+      const readBodyChunk = async () => new BinaryReader(await this.readChunk(bodyStartPosition, bodyEndPosition));
 
-      yield {
-        type: atomType,
-        size: atomSize,
-        bodyStartPosition: atomBodyStartPosition,
-        bodyEndPosition: atomBodyEndPosition,
-        readBodyChunk: readAtomBodyChunk,
-      };
+      yield { type, size, bodyStartPosition, bodyEndPosition, readBodyChunk };
 
-      position += atomSize;
+      position += size;
     }
   }
 

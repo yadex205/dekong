@@ -82,6 +82,30 @@ export class BinaryReader {
     return value;
   }
 
+  public readBCD8 = () => {
+    const valueDigit1 = this._dataView.getUint8(this._position) >>> 4;
+    const valueDigit2 = this._dataView.getUint8(this._position) & 0x0f;
+
+    const value = valueDigit1 * 10 + valueDigit2;
+
+    this._position += 1;
+
+    return value;
+  }
+
+  public readBCD16 = () => {
+    const valueDigit1 = this._dataView.getUint8(this._position) >>> 4;
+    const valueDigit2 = this._dataView.getUint8(this._position) & 0x0f;
+    const valueDigit3 = this._dataView.getUint8(this._position + 1) >>> 4;
+    const valueDigit4 = this._dataView.getUint8(this._position + 1) & 0x0f;
+
+    const value = valueDigit1 * 1000 + valueDigit2 * 100 + valueDigit3 * 10 + valueDigit4;
+
+    this._position += 2;
+
+    return value;
+  }
+
   public readString = (length: number, encoding = "utf-8") => {
     const decoder = new TextDecoder(encoding);
     const value = decoder.decode(new Uint8Array(this._buffer, this._position, length))

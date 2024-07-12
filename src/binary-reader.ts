@@ -14,6 +14,10 @@ export class BinaryReader {
     return this._buffer.byteLength;
   }
 
+  public get isEnd() {
+    return this._position >= this._buffer.byteLength();
+  }
+
   public seek = (position: number) => {
     this._position = position;
   }

@@ -1,5 +1,13 @@
 import { BinaryReader } from "../binary-reader";
 
+interface QuickTimeAtom {
+  type: string;
+  size: number;
+  bodyStartPosition: number;
+  bodyEndPosition: number;
+  readBodyChunk: () => Promise<BinaryReader>;
+}
+
 interface QuickTimeContainerMetadata {
   fileTypeCompatibility: {
     majorBrand: string;
@@ -33,16 +41,19 @@ class QuickTimeFileParser {
   public parse = async () => {
     for await (const atom of this.scanAtoms(0, this._file.size)) {
       if (atom.type === "ftyp") {
-        this.parseFileTypeCompatibilityAtom(await atom.readBodyChunk());
+        await this.parseFileTypeCompatibilityAtom(atom);
       } else if (atom.type === "mdat") {
-        this.parseMovieDataAtom(atom.bodyStartPosition, atom.bodyEndPosition);
+        await this.parseMovieDataAtom(atom);
       } else if (atom.type === "moov") {
-      } else if (atom.type === "wide") {
+        await this.parseMovieAtom(atom);
+      } else if (atom.type === "pnot") {
       }
     }
   }
 
-  private parseFileTypeCompatibilityAtom = (atomBody: BinaryReader) => {
+  private parseFileTypeCompatibilityAtom = async (ftypAtom: QuickTimeAtom) => {
+    const atomBody = await ftypAtom.readBodyChunk();
+
     const majorBrand = atomBody.readString(4);
     const minorVersion = atomBody.readUInt32();
     const compatibleBrands: string[] = [];
@@ -52,10 +63,24 @@ class QuickTimeFileParser {
     this._metadata.fileTypeCompatibility = { majorBrand, minorVersion, compatibleBrands }
   }
 
-  private parseMovieDataAtom = (atomBodyStartPosition: number, atomBodyEndPosition: number) => {
-    const startPosition = atomBodyStartPosition;
-    const endPosition = atomBodyEndPosition;
+  private parseMovieDataAtom = async (mdatAtom: QuickTimeAtom) => {
+    const startPosition = mdatAtom.bodyStartPosition;
+    const endPosition = mdatAtom.bodyEndPosition;
     this._metadata.movieData = { startPosition, endPosition };
+  }
+
+  private parseMovieAtom = async (moovAtom: QuickTimeAtom) => {
+    for await (const atom of this.scanAtoms(moovAtom.bodyStartPosition, moovAtom.bodyEndPosition)) {
+      if (atom.type === "prfl") {
+      } else if (atom.type === "mvhd") {
+      } else if (atom.type === "clip") {
+      } else if (atom.type === "trak") {
+      } else if (atom.type === "udta") {
+      } else if (atom.type === "ctab") {
+      } else if (atom.type === "cmov") {
+      } else if (atom.type === "rmra") {
+      }
+    }
   }
 
   private async * scanAtoms(startPosition: number, endPosition: number) {
@@ -72,7 +97,7 @@ class QuickTimeFileParser {
       const bodyEndPosition = position + size;
       const readBodyChunk = async () => new BinaryReader(await this.readChunk(bodyStartPosition, bodyEndPosition));
 
-      yield { type, size, bodyStartPosition, bodyEndPosition, readBodyChunk };
+      yield { type, size, bodyStartPosition, bodyEndPosition, readBodyChunk } as QuickTimeAtom;
 
       position += size;
     }
